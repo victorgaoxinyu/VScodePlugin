@@ -16,6 +16,7 @@ const TODO_FILENAME = 'todos.json'
 interface TodoItem {
     text: string;
     created: string;
+    done?: string;
 }
 
 
@@ -35,7 +36,7 @@ export async function addTodo() {
     };
 
     const filePath = getTodoFilePath();
-    const todos = loadTodos(filePath);
+    const todos = getTodos();
     todos.push(todo);
     saveTodos(filePath, todos);
 
@@ -43,7 +44,7 @@ export async function addTodo() {
     vscode.commands.executeCommand('todo.refresh');
 }
 
-function getTodoFilePath(): string {
+export function getTodoFilePath(): string {
     const workspaceFolders = vscode.workspace.workspaceFolders;
     const folder = workspaceFolders ? workspaceFolders[0].uri.fsPath : __dirname;
     const todoPath = path.join(folder, '.vscode-notes');
@@ -55,23 +56,34 @@ function getTodoFilePath(): string {
     return path.join(todoPath, TODO_FILENAME);
 }
 
-function loadTodos(filePath: string): TodoItem[] {
-    try {
-        const content = fs.readFileSync(
-            filePath, 'utf-8'
-        );
-        return JSON.parse(content);
-    } catch (e) {
-        return [];
-    }
-}
-
-function saveTodos(filePath: string, todos: TodoItem[]) {
-    fs.writeFileSync(filePath, JSON.stringify(todos, null, 2));
-}
-
 export function getTodos(): TodoItem[] {
-    return loadTodos(getTodoFilePath());
+    const filePath = getTodoFilePath();
+    if (fs.existsSync(filePath)) {
+        const data = fs.readFileSync(filePath, 'utf-8');
+        const todos: TodoItem[] = JSON.parse(data);
+        return todos.sort((a, b) => (a.done ? 1: 0) - (b.done ? 1: 0));
+    }
+
+    return []
+}
+
+// does this always rewrite the file?
+export function saveTodos(filePath: string, todos: TodoItem[]): void {
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    fs.writeFileSync(filePath, JSON.stringify(todos, null, 2), 'utf-8');
+}
+
+export function updateTodo(updated: TodoItem): void {
+    const filePath = getTodoFilePath();
+    const todos = getTodos();
+    const idx = todos.findIndex(
+        (t) => t.text === updated.text && t.created === updated.created
+    );
+    if (idx !== -1) {
+        todos[idx] = updated;
+        todos.sort((a, b) => (a.done ? 1 : 0) - (b.done ? 1 : 0));
+        saveTodos(filePath, todos);
+    }
 }
 
 export type { TodoItem };

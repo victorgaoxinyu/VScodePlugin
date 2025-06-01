@@ -52,7 +52,14 @@
           "icon": "media/assistMe.svg"
         }
       ]
-    }
+    },
+    "keybindings": [
+      {
+        "key": "d",
+        "command": "todo.markDone",
+        "when": "view == todoView && viewItem == todoItem"
+      }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
