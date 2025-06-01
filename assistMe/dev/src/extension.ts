@@ -1,13 +1,23 @@
 import * as vscode from 'vscode';
 import { TodoTreeProvider } from './todo/todoTreeProvider';
-import { addTodo, updateTodo, TodoItem } from './todo/todoManager';
+import { addTodo, updateTodo, TodoItem, getTodos } from './todo/todoManager';
+import { NotesProvider } from './todo/notesProvider';
+
 
 export function activate(context: vscode.ExtensionContext) {
 	console.log('assitMe is now active!');
 
-	// Register TODO sidebar view
 	const todoProvider = new TodoTreeProvider(context);
-	vscode.window.registerTreeDataProvider('todoView', todoProvider);
+	const notesProvider = new NotesProvider();
+	
+	context.subscriptions.push(
+		vscode.workspace.registerTextDocumentContentProvider(
+			NotesProvider.scheme, notesProvider
+		),
+		vscode.window.registerTreeDataProvider(
+			'todoView', todoProvider
+		)
+	)
 
 	// add TODO
 	context.subscriptions.push(
@@ -28,17 +38,31 @@ export function activate(context: vscode.ExtensionContext) {
 
 	context.subscriptions.push(
 		vscode.commands.registerCommand('todo.openDetail', async (todo: TodoItem) => {
-			const doc = await vscode.workspace.openTextDocument({
-				content:
-				`# TODO Item\n\n` + 
-				`**Task**: ${todo.text}\n\n` + 
-				`**Created**: ${new Date(todo.created).toLocaleString()}\n` +
-				(todo.done ? `**Done**: ${new Date(todo.done).toLocaleString()}` : ''),
-				language: 'markdown'
-			});
-			vscode.window.showTextDocument(doc);
+			const encodedCreated = encodeURIComponent(todo.created);
+			const uri = vscode.Uri.parse(`${NotesProvider.scheme}:/todo/${encodedCreated}.md`);
+			const doc = await vscode.workspace.openTextDocument(uri);
+			vscode.window.showTextDocument(doc, { preview: false });
+			vscode.window.showInformationMessage("Edit the 'Task:' line and press Command + S to update the TODO.")
 		})
 	);
+
+	// Detect save
+	vscode.workspace.onDidSaveTextDocument((doc) => {
+		if (doc.uri.scheme === NotesProvider.scheme) {
+			const created = decodeURIComponent(doc.uri.path.split('/').pop()?.replace('.md', '') || '');
+			const todos = getTodos();
+			const idx = todos.findIndex(t => t.created === created);
+			if (idx === -1) return;
+
+			const match = doc.getText().match('/Task:\s*(.*)/');
+			if (match) {
+				todos[idx].text = match[1].trim();
+				updateTodo(todos[idx]);
+				todoProvider.refresh();
+				vscode.window.showInformationMessage("TODO updated successfully.");
+			}
+		}
+	})
 
 	context.subscriptions.push(
 		vscode.commands.registerCommand('todo.markDone', async (todo: TodoItem) => {
