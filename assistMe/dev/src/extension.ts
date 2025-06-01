@@ -1,25 +1,29 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
+import { TodoTreeProvider } from './todo/todoTreeProvider';
+import { addTodo } from './todo/todoManager';
 
-// This method is called when your extension is activated
-// Your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
+	console.log('assitMe is now active!');
 
-	// Use the console to output diagnostic information (console.log) and errors (console.error)
-	// This line of code will only be executed once when your extension is activated
-	console.log('Congratulations, your extension "dev" is now active!');
+	// add TODO
+	context.subscriptions.push(
+		vscode.commands.registerCommand(
+			'todo.add', async () => {
+				await addTodo();
+			}
+		)
+	);
 
-	// The command has been defined in the package.json file
-	// Now provide the implementation of the command with registerCommand
-	// The commandId parameter must match the command field in package.json
-	const disposable = vscode.commands.registerCommand('dev.helloWorld', () => {
-		// The code you place here will be executed every time your command is executed
-		// Display a message box to the user
-		vscode.window.showInformationMessage('Hello World from assistMe!');
-	});
+	// Register TODO sidebar view
+	const todoProvider = new TodoTreeProvider(context);
+	vscode.window.registerTreeDataProvider('todoView', todoProvider);
 
-	context.subscriptions.push(disposable);
+	// Refresh TreeView when new TODO is added
+	context.subscriptions.push(
+		vscode.commands.registerCommand('todo.refresh', () => {
+			todoProvider.refresh();
+		})
+	);
 }
 
 // This method is called when your extension is deactivated

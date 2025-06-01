@@ -29,7 +29,30 @@
         "command": "showdoc",
         "title": "assistMe: Show Doc"
       }
-    ]
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "assistMeContainer",
+          "title": "assistMe",
+          "icon": "media/assistMe.svg"
+        }
+      ]
+    },
+    "views": {
+      "assistMeContainer": [
+        {
+          "id": "todoView",
+          "name":"TODO List",
+          "icon": "media/assistMe.svg"
+        },
+        {
+          "id": "docView",
+          "name": "Documentation",
+          "icon": "media/assistMe.svg"
+        }
+      ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
