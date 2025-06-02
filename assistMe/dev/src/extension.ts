@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { TodoTreeProvider } from './todo/todoTreeProvider';
+import { DocViewProvider } from './todo/docViewProvider';
 import { addTodo, updateTodo, TodoItem, getTodos } from './todo/todoManager';
 import { NotesFsProvider } from './todo/notesProvider';
 
@@ -8,6 +9,7 @@ export function activate(context: vscode.ExtensionContext) {
 	console.log('assitMe is now active!');
 
 	const todoProvider = new TodoTreeProvider(context);
+	const docViewProvider = new DocViewProvider();
 	const fsProvider = new NotesFsProvider();
 	const scheme = 'notesfs'
 	
@@ -17,6 +19,9 @@ export function activate(context: vscode.ExtensionContext) {
 		),
 		vscode.window.registerTreeDataProvider(
 			'todoView', todoProvider
+		),
+		vscode.window.registerTreeDataProvider(
+			'docView', docViewProvider
 		)
 	)
 
@@ -55,6 +60,14 @@ export function activate(context: vscode.ExtensionContext) {
 			todoProvider.refresh();
 		})
 	);
+
+	context.subscriptions.push(
+		vscode.commands.registerCommand('docview.openTodosJson', async () => {
+			const uri = vscode.Uri.parse(`${scheme}:/todos.json`);
+			const doc = await vscode.workspace.openTextDocument(uri);
+			vscode.window.showTextDocument(doc, { preview: false });
+		})
+	)
 }
 
 // This method is called when your extension is deactivated

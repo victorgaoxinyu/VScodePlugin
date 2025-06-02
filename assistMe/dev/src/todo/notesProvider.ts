@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { TodoItem, getTodos, updateTodo } from './todoManager';
+import { TodoItem, getTodoFilePath, getTodos, saveTodos, updateTodo } from './todoManager';
 
 
 export class NotesFsProvider implements vscode.FileSystemProvider {
@@ -13,19 +13,23 @@ export class NotesFsProvider implements vscode.FileSystemProvider {
     readFile(uri: vscode.Uri): Uint8Array | Thenable<Uint8Array> {
         console.log("FS: Reading file...")
         const id = decodeURIComponent(uri.path.slice(1));
+
+        // need refactor this part
+        if (id === 'todos.json') {
+            const todos = getTodos();
+            return Buffer.from(JSON.stringify(todos, null, 2), 'utf-8');
+        }
+
         const todos = getTodos();
         const todo = todos.find(t => t.created === id);
         if (!todo) {
             throw vscode.FileSystemError.FileNotFound();
         }
 
-        const content = `
-                # TODO Item
-
-                Task: ${todo.text}
-
-                Created: ${new Date(todo.created).toLocaleString()}
-                ${todo.done ? `Done: ${new Date(todo.done).toLocaleString()}` : ''}`;
+        const content = `#TODO Item\n\n` +
+        `Task: ${todo.text}\n\n` +
+        `Created: ${new Date(todo.created).toLocaleString()}\n\n` +
+        (todo.done ? `Done: ${new Date(todo.done).toLocaleString()}` : '')
         
         return Buffer.from(content, 'utf-8');
     }
@@ -33,6 +37,19 @@ export class NotesFsProvider implements vscode.FileSystemProvider {
     writeFile(uri: vscode.Uri, content: Uint8Array, options: { readonly create: boolean; readonly overwrite: boolean; }): void | Thenable<void> {
         console.log("FS: Writing file...")
         const id = decodeURIComponent(uri.path.slice(1));
+        
+        if (id === 'todos.json') {
+            const raw = Buffer.from(content).toString('utf-8');
+            try {
+                const parsed = JSON.parse(raw);
+                const filePath = getTodoFilePath();
+                saveTodos(filePath, parsed);
+            } catch (e) {
+                vscode.window.showErrorMessage('Invalid JSON format in todos.json');
+            }
+            return
+        }
+        
         const todos = getTodos();
         const todo = todos.find(t => t.created === id);
         if (!todo) return;

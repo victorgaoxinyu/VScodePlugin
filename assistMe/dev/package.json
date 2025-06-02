@@ -28,6 +28,10 @@
       {
         "command": "showdoc",
         "title": "assistMe: Show Doc"
+      },
+      {
+        "command": "docview.openTodosJson",
+        "title": "assistMe: Open todos.json"
       }
     ],
     "viewsContainers": {
