@@ -51,12 +51,20 @@ export class NotesFsProvider implements vscode.FileSystemProvider {
         }
         
         const todos = getTodos();
+        // shouldn't need to find index here again
         const todo = todos.find(t => t.created === id);
         if (!todo) return;
 
-        const newText = Buffer.from(content).toString('utf-8');
-        todo.text = newText.trim()
-        updateTodo(todo)
+        const fullText = Buffer.from(content).toString('utf-8');
+
+        // Extract just the line with Tasks:
+        const taskMatch = fullText.match(/^Task:\s*(.*)$/m);
+        if (taskMatch && taskMatch[1]) {
+            todo.text = taskMatch[1].trim();
+            updateTodo(todo)
+        } else {
+            vscode.window.showErrorMessage('Could not find "Task:" line in the edited content.');
+        }
     }
 
     // No-op methods for readonly FS
