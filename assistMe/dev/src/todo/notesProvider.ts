@@ -1,28 +1,53 @@
 import * as vscode from 'vscode';
 import { TodoItem, getTodos, updateTodo } from './todoManager';
 
-const scheme = 'notes';
 
-export class NotesProvider implements vscode.TextDocumentContentProvider {
-    static readonly scheme = scheme;
-    private _onDidChange = new vscode.EventEmitter<vscode.Uri>();
-    readonly onDidChange = this._onDidChange.event
+export class NotesFsProvider implements vscode.FileSystemProvider {
+    private _emitter = new vscode.EventEmitter<vscode.FileChangeEvent[]>();
+    readonly onDidChangeFile = this._emitter.event;
 
-    provideTextDocumentContent(uri: vscode.Uri): string {
+    stat(uri: vscode.Uri): vscode.FileStat {
+        return { type: vscode.FileType.File, ctime: 0, mtime: Date.now(), size: 0 };
+    }
+
+    readFile(uri: vscode.Uri): Uint8Array | Thenable<Uint8Array> {
+        console.log("FS: Reading file...")
+        const id = decodeURIComponent(uri.path.slice(1));
         const todos = getTodos();
-        const [_, created] = uri.path.split('/');
-        const todo = todos.find(t => t.created === decodeURIComponent(created));
-        if (!todo) return 'TODO not found';
+        const todo = todos.find(t => t.created === id);
+        if (!todo) {
+            throw vscode.FileSystemError.FileNotFound();
+        }
 
-        const content = `# TODO Item\n\n` +
-            `**Task**: ${todo.text}\n\n` +
-            `**Created**: ${new Date(todo.created).toLocaleString()}\n\n` +
-            (todo.done ? `**Done**: ${new Date(todo.done).toLocaleString()}` : '')
+        const content = `
+                # TODO Item
 
-        return content
+                Task: ${todo.text}
+
+                Created: ${new Date(todo.created).toLocaleString()}
+                ${todo.done ? `Done: ${new Date(todo.done).toLocaleString()}` : ''}`;
+        
+        return Buffer.from(content, 'utf-8');
     }
 
-    refresh(uri: vscode.Uri) {
-        this._onDidChange.fire(uri);
+    writeFile(uri: vscode.Uri, content: Uint8Array, options: { readonly create: boolean; readonly overwrite: boolean; }): void | Thenable<void> {
+        console.log("FS: Writing file...")
+        const id = decodeURIComponent(uri.path.slice(1));
+        const todos = getTodos();
+        const todo = todos.find(t => t.created === id);
+        if (!todo) return;
+
+        const newText = Buffer.from(content).toString('utf-8');
+        todo.text = newText.trim()
+        updateTodo(todo)
     }
+
+    // No-op methods for readonly FS
+    watch(): vscode.Disposable { return new vscode.Disposable(() => {}); }
+    readDirectory(uri: vscode.Uri): [string, vscode.FileType][] | Thenable<[string, vscode.FileType][]> {
+        return [];
+    }
+    createDirectory(uri: vscode.Uri): void | Thenable<void> {}
+    delete(uri: vscode.Uri, options: { readonly recursive: boolean; }): void | Thenable<void> {}
+    rename(oldUri: vscode.Uri, newUri: vscode.Uri, options: { readonly overwrite: boolean; }): void | Thenable<void> {}
 }

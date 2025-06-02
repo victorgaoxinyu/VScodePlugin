@@ -77,7 +77,8 @@ export function updateTodo(updated: TodoItem): void {
     const filePath = getTodoFilePath();
     const todos = getTodos();
     const idx = todos.findIndex(
-        (t) => t.text === updated.text && t.created === updated.created
+        // this does not look right
+        (t) => t.created === updated.created
     );
     if (idx !== -1) {
         todos[idx] = updated;
