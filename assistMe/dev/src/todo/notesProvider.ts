@@ -47,6 +47,7 @@ export class NotesFsProvider implements vscode.FileSystemProvider {
                 const parsed = JSON.parse(raw);
                 const filePath = getTodoFilePath();
                 saveTodos(filePath, parsed);
+                this.todoProvider.refresh();
             } catch (e) {
                 vscode.window.showErrorMessage('Invalid JSON format in todos.json');
             }

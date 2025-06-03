@@ -14,16 +14,16 @@
   "contributes": {
     "commands": [
       {
-        "command": "dev.helloWorld",
-        "title": "Hello World"
-      },
-      {
         "command": "todo.add",
         "title": "assistMe: Add TODO"
       },
       {
         "command": "todo.list",
         "title": "assistMe: Show TODO"
+      },
+      {
+        "command": "todo.done",
+        "title": "assistMe: Mark Done"
       },
       {
         "command": "showdoc",
@@ -59,9 +59,11 @@
     },
     "keybindings": [
       {
-        "key": "d",
-        "command": "todo.markDone",
-        "when": "view == todoView && viewItem == todoItem"
+        "command": "todo.done",
+        "key": "cmd+d",
+        "mac": "cmd+d",
+        "win": "ctrl+d",
+        "when": "editorTextFocus || viewItemFocus"
       }
     ]
   },

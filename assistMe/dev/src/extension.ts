@@ -54,10 +54,38 @@ export function activate(context: vscode.ExtensionContext) {
 	);
 
 	context.subscriptions.push(
-		vscode.commands.registerCommand('todo.markDone', async (todo: TodoItem) => {
-			todo.done = new Date().toISOString();
-			updateTodo(todo);
-			todoProvider.refresh();
+		vscode.commands.registerCommand('todo.done', async (arg) => {
+			const todos = getTodos();
+
+			let targetTodo: TodoItem | undefined;
+
+			// Case 1: invoked from tree view, arg will be a TodoItem
+			if (arg && arg.todo) {
+				targetTodo = arg.todo;
+			} else {
+				// Case 2: invoked from editor (extract from active file name)
+				const activeEditor = vscode.window.activeTextEditor;
+				if (activeEditor?.document.uri.scheme === scheme) {
+					const id = decodeURIComponent(activeEditor.document.uri.path.slice(1));
+					targetTodo = todos.find(t => t.created === id);
+				}
+			}
+
+			if (!targetTodo) {
+				vscode.window.showErrorMessage("Unable to locate TODO item.");
+				return;
+			}
+
+			if (targetTodo.done) {
+				vscode.window.showInformationMessage("TODO already marked as done.");
+				return;
+			}
+
+			targetTodo.done = new Date().toLocaleString();
+			updateTodo(targetTodo);
+
+			vscode.window.showInformationMessage("TODO marked as done.");
+			todoProvider.refresh()
 		})
 	);
 
