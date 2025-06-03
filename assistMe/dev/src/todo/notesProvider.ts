@@ -1,8 +1,11 @@
 import * as vscode from 'vscode';
+import { TodoTreeProvider } from './todoTreeProvider';
 import { TodoItem, getTodoFilePath, getTodos, saveTodos, updateTodo } from './todoManager';
 
 
 export class NotesFsProvider implements vscode.FileSystemProvider {
+    constructor(private todoProvider: TodoTreeProvider) {}
+
     private _emitter = new vscode.EventEmitter<vscode.FileChangeEvent[]>();
     readonly onDidChangeFile = this._emitter.event;
 
@@ -62,6 +65,7 @@ export class NotesFsProvider implements vscode.FileSystemProvider {
         if (taskMatch && taskMatch[1]) {
             todo.text = taskMatch[1].trim();
             updateTodo(todo)
+            this.todoProvider.refresh();
         } else {
             vscode.window.showErrorMessage('Could not find "Task:" line in the edited content.');
         }

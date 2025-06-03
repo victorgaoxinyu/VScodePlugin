@@ -10,7 +10,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 	const todoProvider = new TodoTreeProvider(context);
 	const docViewProvider = new DocViewProvider();
-	const fsProvider = new NotesFsProvider();
+	const fsProvider = new NotesFsProvider(todoProvider);
 	const scheme = 'notesfs'
 	
 	context.subscriptions.push(
